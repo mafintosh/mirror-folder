@@ -168,7 +168,7 @@ function parse (name) {
 }
 
 function defaultEquals (a, b, cb) {
-  if (a.stat.size !== b.stat.size) return cb(null, false)
+  if (!a.stat.isDirectory() && (a.stat.size !== b.stat.size)) return cb(null, false)
   if (a.stat.mtime.getTime() > b.stat.mtime.getTime()) return cb(null, false)
   cb(null, true)
 }
