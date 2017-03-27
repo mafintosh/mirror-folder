@@ -2,6 +2,7 @@ var watch = require('recursive-watch')
 var fs = require('fs')
 var path = require('path')
 var events = require('events')
+var through = require('through2')
 
 module.exports = mirror
 
@@ -144,12 +145,16 @@ function mirror (src, dst, opts, cb) {
 
     var rs = a.fs.createReadStream(a.name)
     var ws = b.fs.createWriteStream(b.name, {mode: a.stat.mode})
+    var increment = through(function (chunk, enc, cb) {
+      progress.emit('chunk', chunk)
+      cb(null, chunk)
+    })
 
     rs.on('error', onerror)
     ws.on('error', onerror)
     ws.on('finish', cb)
 
-    rs.pipe(ws)
+    rs.pipe(increment).pipe(ws)
 
     function onerror (err) {
       rs.destroy()
