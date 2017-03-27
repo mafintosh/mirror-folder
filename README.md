@@ -32,6 +32,7 @@ Options include:
   live: false, // keep watching the src and mirror new entries,
   dereference: false, // dereference any symlinks
   equals: fun // optional function to determine if two entries are the same, see below
+  ignore: null // optional function to ignore file paths on src or dest
 }
 ```
 
@@ -49,6 +50,16 @@ function equals (src, dst, cb) {
 
 Per default the equals function will check if mtime is larger on the src entry or if the size is different
 
+The ignore function looks like this:
+
+``` js
+function ignore (file) {
+  // ignore any files with secret in them
+  if (file.indexOf('secret') > -1) return true
+  return false
+}
+```
+
 If you are using a custom fs module (like [graceful-fs](https://github.com/isaacs/node-graceful-fs)) you can pass that in
 with the `src` or `dst` like this:
 
@@ -59,6 +70,10 @@ mirror({name: '/Users/maf/cool-stuff', fs: customFs}, {name: '/Users/maf/cool-st
 #### `progress.on('put', src, dst)`
 
 Emitted when a file/folder is copied from the src to the dst folder.
+
+#### `progress.on('chunk', chunk)`
+
+Emitted when a file chunk is copied from the src to the dst folder.
 
 #### `progress.on('del', dst)`
 
