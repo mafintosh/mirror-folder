@@ -58,7 +58,7 @@ function mirror (src, dst, opts, cb) {
         if (!a.stat && b.stat) return del(b, next)
 
         // copy to b
-        if (a.stat && !b.stat) return put(a, b, next)
+        if (!opts.ignore && (a.stat && !b.stat)) return put(a, b, next)
 
         // check if they are the same
         equals(a, b, function (err, same) {
