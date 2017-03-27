@@ -2,7 +2,6 @@ var watch = require('recursive-watch')
 var fs = require('fs')
 var path = require('path')
 var events = require('events')
-var through = require('through2')
 
 module.exports = mirror
 
