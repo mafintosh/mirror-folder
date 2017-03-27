@@ -71,9 +71,9 @@ mirror({name: '/Users/maf/cool-stuff', fs: customFs}, {name: '/Users/maf/cool-st
 
 Emitted when a file/folder is copied from the src to the dst folder.
 
-#### `progress.on('chunk', chunk)`
+#### `progress.on('put-data', data)`
 
-Emitted when a file chunk is copied from the src to the dst folder.
+Emitted when a file chunk is read from the src.
 
 #### `progress.on('del', dst)`
 

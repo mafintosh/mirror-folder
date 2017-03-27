@@ -148,16 +148,15 @@ function mirror (src, dst, opts, cb) {
 
     var rs = a.fs.createReadStream(a.name)
     var ws = b.fs.createWriteStream(b.name, {mode: a.stat.mode})
-    var increment = through(function (chunk, enc, cb) {
-      progress.emit('chunk', chunk)
-      cb(null, chunk)
-    })
 
     rs.on('error', onerror)
     ws.on('error', onerror)
     ws.on('finish', cb)
 
-    rs.pipe(increment).pipe(ws)
+    rs.pipe(ws)
+    rs.on('data', function (data) {
+      progress.emit('put-data', data)
+    })
 
     function onerror (err) {
       rs.destroy()
