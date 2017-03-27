@@ -53,6 +53,9 @@ function mirror (src, dst, opts, cb) {
         // skip, not in any folder
         if (!a.stat && !b.stat) return next()
 
+        // ignore
+        if (opts.ignore && (opts.ignore(a.name) || opts.ignore(b.name))) return next()
+
         // del from b
         if (!a.stat && b.stat) return del(b, next)
 
@@ -150,6 +153,9 @@ function mirror (src, dst, opts, cb) {
     ws.on('finish', cb)
 
     rs.pipe(ws)
+    rs.on('data', function (data) {
+      progress.emit('put-data', data)
+    })
 
     function onerror (err) {
       rs.destroy()
