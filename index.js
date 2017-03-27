@@ -54,11 +54,14 @@ function mirror (src, dst, opts, cb) {
         // skip, not in any folder
         if (!a.stat && !b.stat) return next()
 
+        // ignore
+        if (opts.ignore && (opts.ignore(a.name) || opts.ignore(b.name))) return next()
+
         // del from b
         if (!a.stat && b.stat) return del(b, next)
 
         // copy to b
-        if (!opts.ignore && (a.stat && !b.stat)) return put(a, b, next)
+        if (a.stat && !b.stat) return put(a, b, next)
 
         // check if they are the same
         equals(a, b, function (err, same) {
