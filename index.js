@@ -30,7 +30,8 @@ function mirror (src, dst, opts, cb) {
   return progress
 
   function update (name) {
-    pending.push(name.slice(src.name.length) || path.sep)
+    if (name === src.name) pending.push('') // allow single file src
+    else pending.push(name.slice(src.name.length) || path.sep)
     if (pending.length === 1) kick()
   }
 
