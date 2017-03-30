@@ -61,7 +61,7 @@ function mirror (src, dst, opts, cb) {
         if (!a.stat && !b.stat) return next()
 
         // ignore
-        if (opts.ignore && (opts.ignore(a.name) || opts.ignore(b.name))) return next()
+        if (opts.ignore && (opts.ignore(a.name, a.stat) || opts.ignore(b.name, b.stat))) return next()
 
         // del from b
         if (!a.stat && b.stat) return del(b, next)
