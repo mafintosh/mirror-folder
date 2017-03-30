@@ -4,6 +4,7 @@
   "description": "Small module to mirror a folder to another folder. Supports live mode as well.",
   "main": "index.js",
   "dependencies": {
+    "fd-read-stream": "^1.1.0",
     "recursive-watch": "^1.1.1"
   },
   "devDependencies": {

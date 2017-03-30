@@ -1,4 +1,5 @@
 var watch = require('recursive-watch')
+var createReadStream = require('fd-read-stream')
 var fs = require('fs')
 var path = require('path')
 var events = require('events')
@@ -24,14 +25,18 @@ function mirror (src, dst, opts, cb) {
   var pending = []
   var equals = opts.equals || defaultEquals
 
-  if (opts.live) watch(src.name, update)
+  if (opts.live) watch(src.name, onwatch)
   walk()
 
   return progress
 
-  function update (name) {
-    if (name === src.name) pending.push('') // allow single file src
-    else pending.push(name.slice(src.name.length) || path.sep)
+  function onwatch (name) {
+    update(name, true)
+  }
+
+  function update (name, live) {
+    if (name === src.name) pending.push({name: '', live: live}) // allow single file src
+    else pending.push({name: name.slice(src.name.length) || path.sep, live: live})
     if (pending.length === 1) kick()
   }
 
@@ -41,10 +46,11 @@ function mirror (src, dst, opts, cb) {
   }
 
   function kick () {
-    var name = pending[0]
+    var name = pending[0].name
+    var live = pending[0].live
 
-    var a = {name: path.join(src.name, name), stat: null, fs: src.fs}
-    var b = {name: path.join(dst.name, name), stat: null, fs: dst.fs}
+    var a = {name: path.join(src.name, name), stat: null, live: live, fs: src.fs}
+    var b = {name: path.join(dst.name, name), stat: null, live: live, fs: dst.fs}
 
     stat(a.fs, a.name, function (_, st) {
       if (st) a.stat = st
@@ -95,7 +101,7 @@ function mirror (src, dst, opts, cb) {
 
       if (!st.isDirectory()) {
         waiting = true
-        update(name)
+        update(name, false)
         return
       }
 
@@ -107,7 +113,7 @@ function mirror (src, dst, opts, cb) {
         for (var i = 0; i < names.length; i++) walking.push(path.join(name, names[i]))
 
         waiting = true
-        update(name)
+        update(name, false)
       })
     })
   }
@@ -144,25 +150,52 @@ function mirror (src, dst, opts, cb) {
 
   function put (a, b, cb) {
     progress.emit('put', a, b)
-    if (a.stat.isDirectory()) return b.fs.mkdir(b.name, a.stat.mode, cb)
+    if (a.stat.isDirectory()) return b.fs.mkdir(b.name, a.stat.mode, ignoreError(cb))
 
-    var rs = a.fs.createReadStream(a.name)
-    var ws = b.fs.createWriteStream(b.name, {mode: a.stat.mode})
+    if (a.live && a.fs.open) {
+      // To work around the race condition that files might be written *in progress*
+      // when live watching we use the fd retry 50ms option.
+      a.fs.open(a.name, 'r', function (err, fd) {
+        if (err) return cb(err)
+        copy(createReadStream(fd, {retry: 50}))
+      })
+    } else {
+      copy(a.fs.createReadStream(a.name))
+    }
 
-    rs.on('error', onerror)
-    ws.on('error', onerror)
-    ws.on('finish', cb)
+    function copy (rs) {
+      var ws = b.fs.createWriteStream(b.name, {mode: a.stat.mode})
 
-    rs.pipe(ws)
-    rs.on('data', function (data) {
-      progress.emit('put-data', data)
-    })
+      rs.on('error', onerror)
+      ws.on('error', onerror)
+      ws.on('finish', onfinish)
 
-    function onerror (err) {
-      rs.destroy()
-      ws.destroy()
-      ws.removeListener('finish', cb)
-      cb(err)
+      rs.pipe(ws)
+      rs.on('data', ondata)
+
+      function ondata (data) {
+        progress.emit('put-data', data, a, b)
+      }
+
+      function onfinish () {
+        progress.emit('put-end', a, b)
+        cb()
+      }
+
+      function onerror (err) {
+        progress.emit('put-error', a, b)
+        rs.destroy()
+        ws.destroy()
+        ws.removeListener('finish', cb)
+        cb(err)
+      }
+    }
+  }
+
+  function ignoreError (cb) {
+    return function (err) {
+      if (err && err.code !== 'EEXIST') return cb(err)
+      cb(null)
     }
   }
 }
