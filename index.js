@@ -142,7 +142,7 @@ function mirror (src, dst, opts, cb) {
 
         b.fs.lstat(name, function (err, st) {
           if (err) return cb()
-          rimraf({name: name, stat: st}, loop)
+          rimraf({name: name, stat: st, fs: b.fs}, loop)
         })
       }
     })
