@@ -95,7 +95,7 @@ function mirror (src, dst, opts, cb) {
     var name = walking.pop()
     waiting = false
 
-    fs.lstat(name, function (err, st) {
+    src.fs.lstat(name, function (err, st) {
       if (err && err.code === 'ENOENT') return walk()
       if (err) return progress.emit('error', err)
 
@@ -105,7 +105,7 @@ function mirror (src, dst, opts, cb) {
         return
       }
 
-      fs.readdir(name, function (err, names) {
+      src.fs.readdir(name, function (err, names) {
         if (err && err.code === 'ENOENT') return walk()
         if (err) return progress.emit('error', err)
 
