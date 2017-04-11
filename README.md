@@ -89,7 +89,7 @@ Emitted when a critical error happens. If you pass a mirror callback you don't n
 
 #### `progress.destory()`
 
-If using watch mode, close the file watcher.
+Stop mirroring files. If using watch mode, close the file watcher.
 
 ## License
 
