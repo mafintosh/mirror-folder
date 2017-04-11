@@ -75,6 +75,10 @@ Emitted when a file/folder is copied from the src to the dst folder.
 
 Emitted when a file chunk is read from the src.
 
+#### `progress.on('put-end', src, dst)`
+
+Emitted at the end of a write stream (files only).
+
 #### `progress.on('del', dst)`
 
 Emitted when a file/folder is deleted from the dst folder.
