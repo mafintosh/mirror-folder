@@ -203,7 +203,7 @@ function mirror (src, dst, opts, cb) {
     }
   }
 
-  function destory () {
+  function destroy () {
     if (opts.watch) stopWatch()
     pending = []
     stopped = true
