@@ -2,7 +2,7 @@
 
 Small module to mirror a folder to another folder.
 
-Supports live mode as well where it will contintously watch the src folder and mirror new entries as they are created/removed.
+Supports watch mode as well where it will continuously watch the src folder and mirror new entries as they are created/removed.
 
 ```
 npm install mirror-folder
@@ -29,7 +29,7 @@ Options include:
 
 ``` js
 {
-  live: false, // keep watching the src and mirror new entries,
+  watch: false, // keep watching the src and mirror new entries,
   dereference: false, // dereference any symlinks
   equals: fun // optional function to determine if two entries are the same, see below
   ignore: null // optional function to ignore file paths on src or dest
@@ -81,7 +81,7 @@ Emitted when a file/folder is deleted from the dst folder.
 
 #### `progress.on('end')`
 
-Emitted when the mirror ends (not emitted in live mode). The mirror callback is called when this event is emitted as well
+Emitted when the mirror ends (not emitted in watch mode). The mirror callback is called when this event is emitted as well
 
 #### `progress.on('error', err)`
 
