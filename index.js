@@ -208,7 +208,6 @@ function mirror (src, dst, opts, cb) {
     if (opts.watch) stopWatch()
     pending = []
     stopped = true
-    return
   }
 }
 
