@@ -11,6 +11,7 @@ function mirror (src, dst, opts, cb) {
   if (!opts) opts = {}
 
   var progress = new events.EventEmitter()
+  progress.destroy = destroy
 
   if (cb) {
     progress.on('error', cb)
@@ -20,10 +21,12 @@ function mirror (src, dst, opts, cb) {
   src = parse(src)
   dst = parse(dst)
 
+  var stopped = false
   var waiting = true
   var walking = [src.name]
   var pending = []
   var equals = opts.equals || defaultEquals
+  var stopWatch = null
 
   if (opts.watch) stopWatch = watch(src.name, onwatch)
   walk()
@@ -82,6 +85,7 @@ function mirror (src, dst, opts, cb) {
   function next (err) {
     if (stopped) return
     if (err) return progress.emit('error', err)
+    if (stopped) return
 
     pending.shift()
     if (pending.length) return kick()
@@ -96,7 +100,7 @@ function mirror (src, dst, opts, cb) {
     var name = walking.pop()
     waiting = false
 
-    fs.lstat(name, function (err, st) {
+    src.fs.lstat(name, function (err, st) {
       if (err && err.code === 'ENOENT') return walk()
       if (err) return progress.emit('error', err)
 
@@ -106,7 +110,7 @@ function mirror (src, dst, opts, cb) {
         return
       }
 
-      fs.readdir(name, function (err, names) {
+      src.fs.readdir(name, function (err, names) {
         if (err && err.code === 'ENOENT') return walk()
         if (err) return progress.emit('error', err)
 
@@ -198,6 +202,13 @@ function mirror (src, dst, opts, cb) {
       if (err && err.code !== 'EEXIST') return cb(err)
       cb(null)
     }
+  }
+
+  function destroy () {
+    if (opts.watch) stopWatch()
+    pending = []
+    stopped = true
+    return
   }
 }
 
