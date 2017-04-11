@@ -24,9 +24,8 @@ function mirror (src, dst, opts, cb) {
   var walking = [src.name]
   var pending = []
   var equals = opts.equals || defaultEquals
-  var doWatch = opts.watch || opts.live // opts.live = 1.0 backwards compat
 
-  if (doWatch) progress.destroy = watch(src.name, onwatch)
+  if (opts.watch) stopWatch = watch(src.name, onwatch)
   walk()
 
   return progress
@@ -81,12 +80,13 @@ function mirror (src, dst, opts, cb) {
   }
 
   function next (err) {
+    if (stopped) return
     if (err) return progress.emit('error', err)
 
     pending.shift()
     if (pending.length) return kick()
 
-    if (!doWatch && !walking.length && waiting) return progress.emit('end')
+    if (!opts.watch && !walking.length && waiting) return progress.emit('end')
     walk()
   }
 
