@@ -11,6 +11,7 @@ function mirror (src, dst, opts, cb) {
   if (!opts) opts = {}
 
   var progress = new events.EventEmitter()
+  progress.destroy = destroy
 
   if (cb) {
     progress.on('error', cb)
@@ -20,12 +21,14 @@ function mirror (src, dst, opts, cb) {
   src = parse(src)
   dst = parse(dst)
 
+  var stopped = false
   var waiting = true
   var walking = [src.name]
   var pending = []
   var equals = opts.equals || defaultEquals
+  var stopWatch = null
 
-  if (opts.live) watch(src.name, onwatch)
+  if (opts.live) stopWatch = watch(src.name, onwatch)
   walk()
 
   return progress
@@ -81,6 +84,7 @@ function mirror (src, dst, opts, cb) {
 
   function next (err) {
     if (err) return progress.emit('error', err)
+    if (stopped) return
 
     pending.shift()
     if (pending.length) return kick()
@@ -197,6 +201,13 @@ function mirror (src, dst, opts, cb) {
       if (err && err.code !== 'EEXIST') return cb(err)
       cb(null)
     }
+  }
+
+  function destroy () {
+    if (opts.watch) stopWatch()
+    pending = []
+    stopped = true
+    return
   }
 }
 

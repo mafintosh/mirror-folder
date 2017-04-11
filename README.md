@@ -87,6 +87,10 @@ Emitted when the mirror ends (not emitted in live mode). The mirror callback is 
 
 Emitted when a critical error happens. If you pass a mirror callback you don't need to listen for this.
 
+#### `progress.destory()`
+
+Stop mirroring files. If using watch mode, close the file watcher.
+
 ## License
 
 MIT
