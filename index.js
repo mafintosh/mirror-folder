@@ -25,7 +25,7 @@ function mirror (src, dst, opts, cb) {
   var pending = []
   var equals = opts.equals || defaultEquals
 
-  if (opts.live) watch(src.name, onwatch)
+  if (opts.live) progress.destroy = watch(src.name, onwatch)
   walk()
 
   return progress
