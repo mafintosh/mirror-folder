@@ -84,6 +84,7 @@ function mirror (src, dst, opts, cb) {
 
   function next (err) {
     if (err) return progress.emit('error', err)
+    if (stopped) return
 
     pending.shift()
     if (pending.length) return kick()
