@@ -1,5 +1,8 @@
 # mirror-folder
 
+[![npm][npm-image]][npm-url]
+[![travis][travis-image]][travis-url]
+
 Small module to mirror a folder to another folder.
 
 Supports watch mode as well where it will continuously watch the src folder and mirror new entries as they are created/removed.
@@ -98,3 +101,8 @@ Stop mirroring files. If using watch mode, close the file watcher.
 ## License
 
 MIT
+
+[npm-image]: https://img.shields.io/npm/v/mirror-folder.svg?style=flat-square
+[npm-url]: https://www.npmjs.com/package/mirror-folder
+[travis-image]: https://img.shields.io/travis/mafintosh/mirror-folder.svg?style=flat-square
+[travis-url]: https://travis-ci.org/mafintosh/mirror-folder
