@@ -176,7 +176,7 @@ test('delete extra files in dest', function (t) {
     function done () {
       t.ok(fs.statSync(path.join(dir, 'hello.txt')), 'file copied')
       t.ok(fs.statSync(path.join(dir, 'dir', 'file.txt')), 'file copied')
-      t.notOk(fs.statSync(path.join(dir, 'extra.txt')), 'extra file deleted')
+      t.throws(function () { fs.statSync(path.join(dir, 'extra.txt')) }, 'extra file deleted')
 
       cleanup(function (err) {
         t.ifError(err, 'error')

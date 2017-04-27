@@ -37,7 +37,7 @@ function mirror (src, dst, opts, cb) {
     update(name, true)
   }
 
-  function update (name, live) {
+  function update (name, live, dst) {
     if (name === src.name) pending.push({name: '', live: live}) // allow single file src
     else pending.push({name: name.slice(src.name.length) || path.sep, live: live})
     if (pending.length === 1) kick()
@@ -117,8 +117,21 @@ function mirror (src, dst, opts, cb) {
         names = names.sort().reverse()
         for (var i = 0; i < names.length; i++) walking.push(path.join(name, names[i]))
 
-        waiting = true
-        update(name, false)
+        var dstName = path.join(dst.name, path.relative(src.name, name))
+        dst.fs.readdir(dstName, function (err, dstNames) {
+          if (err) return next()
+
+          dstNames = dstNames.sort().reverse().filter(function (file) {
+            return names.indexOf(file) === -1
+          })
+          for (var j = 0; j < dstNames.length; j++) update(path.join(name, dstNames[j]), false) // hack add src name for update() call
+          next()
+        })
+
+        function next () {
+          waiting = true
+          update(name, false)
+        }
       })
     })
   }
