@@ -121,16 +121,26 @@ function mirror (src, dst, opts, cb) {
         dst.fs.readdir(dstName, function (err, dstNames) {
           if (err) return next()
 
-          dstNames = dstNames.sort().reverse().filter(function (file) {
-            return names.indexOf(file) === -1
-          })
-          for (var j = 0; j < dstNames.length; j++) update(path.join(name, dstNames[j]), false) // hack add src name for update() call
+          queueFilesToDelete()
           next()
         })
 
         function next () {
           waiting = true
           update(name, false)
+        }
+
+        function queueFilesToDelete () {
+          // names = array of files in src
+          // dstNames = array of files in dst
+          // return items in dest but not in src (to delete)
+          dstNames = dstNames.sort().reverse().filter(function (file) {
+            return names.indexOf(file) === -1
+          })
+
+          // add files to pending to queue for deletion in dest
+          // use `join(srcName, dstName)` since !src.stat = true, forces delete
+          for (var j = 0; j < dstNames.length; j++) update(path.join(name, dstNames[j]), false)
         }
       })
     })
