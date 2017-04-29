@@ -70,6 +70,14 @@ with the `src` or `dst` like this:
 mirror({name: '/Users/maf/cool-stuff', fs: customFs}, {name: '/Users/maf/cool-stuff-mirror', fs: anotherFs})
 ```
 
+#### `progress.on('pending', {name, live})`
+
+Emitted when file/dir added to pending queue.
+
+#### `progress.pending`
+
+Array of items pending to be processed.
+
 #### `progress.on('put', src, dst)`
 
 Emitted when a file/folder is copied from the src to the dst folder.
@@ -105,10 +113,6 @@ Emitted when a critical error happens. If you pass a mirror callback you don't n
 #### `progress.destory()`
 
 Stop mirroring files. If using watch mode, close the file watcher.
-
-#### `progress.pending`
-
-Array of items pending to be processed.
 
 ## License
 
