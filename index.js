@@ -121,7 +121,7 @@ function mirror (src, dst, opts, cb) {
         dst.fs.readdir(dstName, function (err, dstNames) {
           if (err) return next()
 
-          queueFilesToDelete()
+          queueFilesToDelete(dstNames)
           next()
         })
 
@@ -130,7 +130,7 @@ function mirror (src, dst, opts, cb) {
           update(name, false)
         }
 
-        function queueFilesToDelete () {
+        function queueFilesToDelete (dstNames) {
           // names = array of files in src
           // dstNames = array of files in dst
           // return items in dest but not in src (to delete)
