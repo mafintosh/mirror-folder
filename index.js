@@ -38,9 +38,44 @@ function mirror (src, dst, opts, cb) {
   }
 
   function update (name, live) {
-    if (name === src.name) pending.push({name: '', live: live}) // allow single file src
-    else pending.push({name: name.slice(src.name.length) || path.sep, live: live})
-    if (pending.length === 1) kick()
+    name = name.slice(src.name.length) || path.sep
+    if (name === src.name) name = '' // allow single file src
+
+    var a = {name: path.join(src.name, name), stat: null, live: live, fs: src.fs}
+    var b = {name: path.join(dst.name, name), stat: null, live: live, fs: dst.fs}
+
+    stat(a.fs, a.name, function (_, st) {
+      if (st) a.stat = st
+      stat(b.fs, b.name, function (_, st) {
+        // skip, not in any folder
+        if (!a.stat && !b.stat) return
+
+        // ignore
+        if (opts.ignore && (opts.ignore(a.name, a.stat) || opts.ignore(b.name, b.stat))) return
+
+        // del from b
+        if (!a.stat && b.stat) return addPending()
+
+        // copy to b
+        if (a.stat && !b.stat) {
+          progress.emit('pending', a)
+          return addPending()
+        }
+
+        // check if they are the same
+        equals(a, b, function (err, same) {
+          if (err) throw err
+          if (same) return // do not add to pending
+          progress.emit('pending', a)
+          addPending()
+        })
+
+        function addPending () {
+          pending.push({src: a, dst: b})
+          if (pending.length === 1) kick()
+        }
+      })
+    })
   }
 
   function stat (fs, name, cb) {
@@ -49,37 +84,14 @@ function mirror (src, dst, opts, cb) {
   }
 
   function kick () {
-    var name = pending[0].name
-    var live = pending[0].live
+    var a = pending[0].src
+    var b = pending[0].dst
 
-    var a = {name: path.join(src.name, name), stat: null, live: live, fs: src.fs}
-    var b = {name: path.join(dst.name, name), stat: null, live: live, fs: dst.fs}
+    // del from b
+    if (!a.stat && b.stat) return del(b, next)
 
-    stat(a.fs, a.name, function (_, st) {
-      if (st) a.stat = st
-      stat(b.fs, b.name, function (_, st) {
-        if (st) b.stat = st
-
-        // skip, not in any folder
-        if (!a.stat && !b.stat) return next()
-
-        // ignore
-        if (opts.ignore && (opts.ignore(a.name, a.stat) || opts.ignore(b.name, b.stat))) return next()
-
-        // del from b
-        if (!a.stat && b.stat) return del(b, next)
-
-        // copy to b
-        if (a.stat && !b.stat) return put(a, b, next)
-
-        // check if they are the same
-        equals(a, b, function (err, same) {
-          if (err) throw err
-          if (same) return next()
-          put(a, b, next)
-        })
-      })
-    })
+    // copy to b
+    put(a, b, next)
   }
 
   function next (err) {

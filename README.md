@@ -70,6 +70,10 @@ with the `src` or `dst` like this:
 mirror({name: '/Users/maf/cool-stuff', fs: customFs}, {name: '/Users/maf/cool-stuff-mirror', fs: anotherFs})
 ```
 
+#### `progress.on('pending', src)`
+
+Emitted when a file/folder is queued to be copied to the destination.
+
 #### `progress.on('put', src, dst)`
 
 Emitted when a file/folder is copied from the src to the dst folder.
