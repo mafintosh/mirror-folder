@@ -13,9 +13,27 @@ test('mirror regular fs', function (t) {
     t.ifError(err, 'error')
 
     var puts = 0
+    var pending = 0
     var progress = mirror(fixtures, dir, function (err) {
       t.ifError(err, 'error')
       done()
+    })
+
+    progress.on('pending', function () {
+      pending++
+    })
+
+    progress.on('ignore', function () {
+      pending--
+    })
+
+    progress.on('skip', function () {
+      pending--
+    })
+
+    progress.on('put', function () {
+      t.ok(progress.pending.length, 'pending items')
+      pending--
     })
 
     progress.on('put-end', function (src) {
@@ -23,6 +41,8 @@ test('mirror regular fs', function (t) {
     })
 
     function done () {
+      t.ok(progress.pending.length === 0, 'no items in pending queue')
+      t.same(pending, 0, 'zero items pending')
       t.same(puts, 2, 'two files added')
       t.ok(fs.statSync(path.join(dir, 'hello.txt')), 'file copied')
       t.ok(fs.statSync(path.join(dir, 'dir', 'file.txt')), 'file copied')

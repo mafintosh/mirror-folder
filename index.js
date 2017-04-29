@@ -24,7 +24,7 @@ function mirror (src, dst, opts, cb) {
   var stopped = false
   var waiting = true
   var walking = [src.name]
-  var pending = []
+  var pending = progress.pending = []
   var equals = opts.equals || defaultEquals
   var stopWatch = null
 
@@ -38,8 +38,11 @@ function mirror (src, dst, opts, cb) {
   }
 
   function update (name, live) {
-    if (name === src.name) pending.push({name: '', live: live}) // allow single file src
-    else pending.push({name: name.slice(src.name.length) || path.sep, live: live})
+    var item = {name: name.slice(src.name.length) || path.sep, live: live}
+    if (name === src.name) item = {name: '', live: live} // allow single file src (not '/')
+
+    progress.emit('pending', item)
+    pending.push(item)
     if (pending.length === 1) kick()
   }
 
@@ -61,10 +64,16 @@ function mirror (src, dst, opts, cb) {
         if (st) b.stat = st
 
         // skip, not in any folder
-        if (!a.stat && !b.stat) return next()
+        if (!a.stat && !b.stat) {
+          progress.emit('skip', a, b)
+          return next()
+        }
 
         // ignore
-        if (opts.ignore && (opts.ignore(a.name, a.stat) || opts.ignore(b.name, b.stat))) return next()
+        if (opts.ignore && (opts.ignore(a.name, a.stat) || opts.ignore(b.name, b.stat))) {
+          progress.emit('ignore', a, b)
+          return next()
+        }
 
         // del from b
         if (!a.stat && b.stat) return del(b, next)
@@ -75,7 +84,10 @@ function mirror (src, dst, opts, cb) {
         // check if they are the same
         equals(a, b, function (err, same) {
           if (err) throw err
-          if (same) return next()
+          if (same) {
+            progress.emit('skip', a, b)
+            return next()
+          }
           put(a, b, next)
         })
       })

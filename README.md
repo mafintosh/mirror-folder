@@ -86,6 +86,14 @@ Emitted at the end of a write stream (files only).
 
 Emitted when a file/folder is deleted from the dst folder.
 
+#### `progress.on('ignore', src, dst)`
+
+Emitted when a file/folder is ignored (either src or dst).
+
+#### `progress.on('skip', src, dst)`
+
+Emitted when a file/folder is skipped. Either src file already is `equal` to dst file or file does not exist in either place.
+
 #### `progress.on('end')`
 
 Emitted when the mirror ends (not emitted in watch mode). The mirror callback is called when this event is emitted as well
@@ -97,6 +105,10 @@ Emitted when a critical error happens. If you pass a mirror callback you don't n
 #### `progress.destory()`
 
 Stop mirroring files. If using watch mode, close the file watcher.
+
+#### `progress.pending`
+
+Array of items pending to be processed.
 
 ## License
 
