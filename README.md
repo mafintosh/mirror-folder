@@ -71,6 +71,14 @@ with the `src` or `dst` like this:
 mirror({name: '/Users/maf/cool-stuff', fs: customFs}, {name: '/Users/maf/cool-stuff-mirror', fs: anotherFs})
 ```
 
+#### `progress.on('pending', {name, live})`
+
+Emitted when file/dir added to pending queue.
+
+#### `progress.pending`
+
+Array of items pending to be processed.
+
 #### `progress.on('put', src, dst)`
 
 Emitted when a file/folder is copied from the src to the dst folder.
@@ -86,6 +94,14 @@ Emitted at the end of a write stream (files only).
 #### `progress.on('del', dst)`
 
 Emitted when a file/folder is deleted from the dst folder.
+
+#### `progress.on('ignore', src, dst)`
+
+Emitted when a file/folder is ignored (either src or dst).
+
+#### `progress.on('skip', src, dst)`
+
+Emitted when a file/folder is skipped. Either src file already is `equal` to dst file or file does not exist in either place.
 
 #### `progress.on('end')`
 
