@@ -162,3 +162,26 @@ test('dry run regular fs', function (t) {
     }
   })
 })
+
+test('delete extra files in dest', function (t) {
+  tmp(function (err, dir, cleanup) {
+    t.ifError(err, 'error')
+    fs.writeFileSync(path.join(dir, 'extra.txt'), 'extra stuff')
+
+    mirror(fixtures, dir, function (err) {
+      t.ifError(err, 'error')
+      done()
+    })
+
+    function done () {
+      t.ok(fs.statSync(path.join(dir, 'hello.txt')), 'file copied')
+      t.ok(fs.statSync(path.join(dir, 'dir', 'file.txt')), 'file copied')
+      t.throws(function () { fs.statSync(path.join(dir, 'extra.txt')) }, 'extra file deleted')
+
+      cleanup(function (err) {
+        t.ifError(err, 'error')
+        t.end()
+      })
+    }
+  })
+})
