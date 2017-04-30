@@ -41,8 +41,8 @@ function mirror (src, dst, opts, cb) {
     var item = {name: name.slice(src.name.length) || path.sep, live: live}
     if (name === src.name) item = {name: '', live: live} // allow single file src (not '/')
 
-    progress.emit('pending', item)
     pending.push(item)
+    progress.emit('pending', item)
     if (pending.length === 1) kick()
   }
 
