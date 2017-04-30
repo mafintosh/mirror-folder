@@ -129,3 +129,36 @@ test('mirror regular fs to custom fs', function (t) {
     }
   })
 })
+
+test('dry run regular fs', function (t) {
+  tmp(function (err, dir, cleanup) {
+    t.ifError(err, 'error')
+
+    var puts = 0
+    var putEnds = 0
+    var progress = mirror(fixtures, dir, {dryRun: true}, function (err) {
+      t.ifError(err, 'error')
+      done()
+    })
+
+    progress.on('put', function (src) {
+      puts++
+    })
+
+    progress.on('put-end', function (src) {
+      putEnds++
+    })
+
+    function done () {
+      t.same(puts, 3, 'three puts')
+      t.same(putEnds, 2, 'two putEnd')
+      t.throws(function () { fs.statSync(path.join(dir, 'hello.txt')) }, 'file not copied')
+      t.throws(function () { fs.statSync(path.join(dir, 'dir', 'file.txt')) }, 'file not copied')
+
+      cleanup(function (err) {
+        t.ifError(err, 'error')
+        t.end()
+      })
+    }
+  })
+})

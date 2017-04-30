@@ -34,8 +34,9 @@ Options include:
 {
   watch: false, // keep watching the src and mirror new entries,
   dereference: false, // dereference any symlinks
-  equals: fun // optional function to determine if two entries are the same, see below
-  ignore: null // optional function to ignore file paths on src or dest
+  equals: fun, // optional function to determine if two entries are the same, see below
+  ignore: null, // optional function to ignore file paths on src or dest
+  dryRun: false // emit all events but don't write/del files
 }
 ```
 
