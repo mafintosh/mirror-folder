@@ -1,6 +1,6 @@
 {
   "name": "mirror-folder",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Small module to mirror a folder to another folder. Supports live mode as well.",
   "main": "index.js",
   "dependencies": {
