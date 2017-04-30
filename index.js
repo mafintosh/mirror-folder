@@ -37,7 +37,7 @@ function mirror (src, dst, opts, cb) {
     update(name, true)
   }
 
-  function update (name, live, dst) {
+  function update (name, live) {
     if (name === src.name) pending.push({name: '', live: live}) // allow single file src
     else pending.push({name: name.slice(src.name.length) || path.sep, live: live})
     if (pending.length === 1) kick()
