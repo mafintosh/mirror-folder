@@ -209,7 +209,7 @@ function mirror (src, dst, opts, cb) {
     }
 
     function copy (rs) {
-      var ws = b.fs.createWriteStream(b.name, {mode: a.stat.mode})
+      var ws = b.fs.createWriteStream(b.name, {mode: a.stat.mode, indexing: opts.indexing})
 
       rs.on('error', onerror)
       ws.on('error', onerror)
