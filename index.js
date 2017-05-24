@@ -69,8 +69,16 @@ function mirror (src, dst, opts, cb) {
           return next()
         }
 
+        if (live && a.stat && a.stat.isDirectory()) {
+          walking.push(a.name) // will retrigger
+          return next()
+        }
+
         // ignore
         if (opts.ignore && (opts.ignore(a.name, a.stat) || opts.ignore(b.name, b.stat))) {
+          if (live && b.stat && b.stat.isDirectory() && !a.stat) {
+            return rimraf(b, opts.ignore, next)
+          }
           progress.emit('ignore', a, b)
           return next()
         }
@@ -162,18 +170,19 @@ function mirror (src, dst, opts, cb) {
     progress.emit('del', b)
     if (opts.dryRun) return cb()
     if (!b.stat.isDirectory()) return b.fs.unlink(b.name, cb)
-    rimraf(b, function () { // ignore errors for now
+    rimraf(b, null, function () { // ignore errors for now
       cb()
     })
   }
 
-  function rimraf (b, cb) { // this one is a bit hacky ...
+  function rimraf (b, ignore, cb) { // this one is a bit hacky ...
     b.fs.readdir(b.name, function (_, list) {
       if (!list) list = []
       loop()
 
       function loop () {
         if (!list.length) {
+          if (ignore && ignore(b.name, b.stat)) return process.nextTick(cb)
           if (b.stat.isDirectory()) b.fs.rmdir(b.name, cb)
           else b.fs.unlink(b.name, cb)
           return
@@ -183,7 +192,7 @@ function mirror (src, dst, opts, cb) {
 
         b.fs.lstat(name, function (err, st) {
           if (err) return cb()
-          rimraf({name: name, stat: st, fs: b.fs}, loop)
+          rimraf({name: name, stat: st, fs: b.fs}, ignore, loop)
         })
       }
     })
