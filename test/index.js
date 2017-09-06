@@ -14,7 +14,7 @@ test('mirror regular fs', function (t) {
 
     var puts = 0
     var pending = 0
-    var progress = mirror(fixtures, dir, function (err) {
+    var progress = mirror(fixtures, dir, {dereference: true}, function (err) {
       t.ifError(err, 'error')
       done()
     })
@@ -43,7 +43,7 @@ test('mirror regular fs', function (t) {
     function done () {
       t.ok(progress.pending.length === 0, 'no items in pending queue')
       t.same(pending, 0, 'zero items pending')
-      t.same(puts, 2, 'two files added')
+      t.same(puts, 4, 'four files added')
       t.ok(fs.statSync(path.join(dir, 'hello.txt')), 'file copied')
       t.ok(fs.statSync(path.join(dir, 'dir', 'file.txt')), 'file copied')
 
@@ -60,7 +60,7 @@ test('mirror + destory in progress', function (t) {
     t.ifError(err, 'error')
 
     var puts = 0
-    var progress = mirror(fixtures, dir, function (err) {
+    var progress = mirror(fixtures, dir, {dereference: true}, function (err) {
       t.ifError(err, 'error')
       t.fail('should not callback')
     })
@@ -93,7 +93,8 @@ test('mirror regular fs with watch mode', function (t) {
     var tmpFile = path.join(fixtures, 'tmp.txt')
     var puts = 0
     var progress = mirror(fixtures, dir, {
-      watch: true
+      watch: true,
+      dereference: true
     })
 
     progress.on('put-end', function (src) {
@@ -109,7 +110,7 @@ test('mirror regular fs with watch mode', function (t) {
     })
 
     function done () {
-      t.same(puts, 3, '3 files added')
+      t.same(puts, 5, '5 files added')
       t.ok(fs.statSync(path.join(dir, 'tmp.txt')), 'file copied')
       t.ok(fs.statSync(path.join(dir, 'hello.txt')), 'file copied')
       t.ok(fs.statSync(path.join(dir, 'dir', 'file.txt')), 'file copied')
@@ -130,7 +131,7 @@ test('mirror regular fs to custom fs', function (t) {
     t.ifError(err, 'error')
 
     var puts = 0
-    var progress = mirror(fixtures, {fs: archive, name: '/'}, function (err) {
+    var progress = mirror(fixtures, {fs: archive, name: '/', dereference: true}, function (err) {
       t.ifError(err, 'error')
       done()
     })
@@ -140,7 +141,7 @@ test('mirror regular fs to custom fs', function (t) {
     })
 
     function done () {
-      t.same(puts, 2, 'two files added')
+      t.same(puts, 3, 'three files added')
       archive.stat('/hello.txt', function (err, stat) {
         t.ifError(err, 'error')
         t.ok(stat)
@@ -156,7 +157,7 @@ test('dry run regular fs', function (t) {
 
     var puts = 0
     var putEnds = 0
-    var progress = mirror(fixtures, dir, {dryRun: true}, function (err) {
+    var progress = mirror(fixtures, dir, {dryRun: true, dereference: true}, function (err) {
       t.ifError(err, 'error')
       done()
     })
@@ -170,8 +171,8 @@ test('dry run regular fs', function (t) {
     })
 
     function done () {
-      t.same(puts, 3, 'three puts')
-      t.same(putEnds, 2, 'two putEnd')
+      t.same(puts, 7, 'seven puts')
+      t.same(putEnds, 4, 'four putEnd')
       t.throws(function () { fs.statSync(path.join(dir, 'hello.txt')) }, 'file not copied')
       t.throws(function () { fs.statSync(path.join(dir, 'dir', 'file.txt')) }, 'file not copied')
 
@@ -188,7 +189,7 @@ test('delete extra files in dest', function (t) {
     t.ifError(err, 'error')
     fs.writeFileSync(path.join(dir, 'extra.txt'), 'extra stuff')
 
-    mirror(fixtures, dir, function (err) {
+    mirror(fixtures, dir, {dereference: true}, function (err) {
       t.ifError(err, 'error')
       done()
     })
