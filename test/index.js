@@ -205,3 +205,26 @@ test('delete extra files in dest', function (t) {
     }
   })
 })
+
+test('keep extra files in dest when opts.keepExisting is true', function (t) {
+  tmp(function (err, dir, cleanup) {
+    t.ifError(err, 'error')
+    fs.writeFileSync(path.join(dir, 'extra.txt'), 'extra stuff')
+
+    mirror(fixtures, dir, {keepExisting: true}, function (err) {
+      t.ifError(err, 'error')
+      done()
+    })
+
+    function done () {
+      t.ok(fs.statSync(path.join(dir, 'hello.txt')), 'file copied')
+      t.ok(fs.statSync(path.join(dir, 'dir', 'file.txt')), 'file copied')
+      t.ok(fs.statSync(path.join(dir, 'extra.txt')), 'extra file kept')
+
+      cleanup(function (err) {
+        t.ifError(err, 'error')
+        t.end()
+      })
+    }
+  })
+})
