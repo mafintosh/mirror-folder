@@ -141,7 +141,7 @@ function mirror (src, dst, opts, cb) {
         dst.fs.readdir(dstName, function (err, dstNames) {
           if (err) return next()
 
-          if (!opts.keepExtras) {
+          if (!opts.keepExisting) {
             queueFilesToDelete(dstNames)
           }
           next()

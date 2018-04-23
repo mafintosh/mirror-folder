@@ -206,12 +206,12 @@ test('delete extra files in dest', function (t) {
   })
 })
 
-test('keep extra files in dest when opts.keepExtras is true', function (t) {
+test('keep extra files in dest when opts.keepExisting is true', function (t) {
   tmp(function (err, dir, cleanup) {
     t.ifError(err, 'error')
     fs.writeFileSync(path.join(dir, 'extra.txt'), 'extra stuff')
 
-    mirror(fixtures, dir, {keepExtras: true}, function (err) {
+    mirror(fixtures, dir, {keepExisting: true}, function (err) {
       t.ifError(err, 'error')
       done()
     })

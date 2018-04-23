@@ -37,7 +37,7 @@ Options include:
   equals: fun, // optional function to determine if two entries are the same, see below
   ignore: null, // optional function to ignore file paths on src or dest
   dryRun: false // emit all events but don't write/del files,
-  keepExtras: false // whether to delete extra files in the destination that are not present in the source
+  keepExisting: false // whether to delete extra files in the destination that are not present in the source
 }
 ```
 
