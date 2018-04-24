@@ -9,6 +9,7 @@ module.exports = mirror
 function mirror (src, dst, opts, cb) {
   if (typeof opts === 'function') return mirror(src, dst, null, opts)
   if (!opts) opts = {}
+  if (opts.skipSpecial !== false) opts.skipSpecial = true
 
   var progress = new events.EventEmitter()
   progress.destroy = destroy
@@ -71,6 +72,11 @@ function mirror (src, dst, opts, cb) {
 
         if (live && a.stat && a.stat.isDirectory()) {
           walking.push(a.name) // will retrigger
+          return next()
+        }
+
+        if (opts.skipSpecial && !a.isFile()) {
+          progress.emit('skip', a, b)
           return next()
         }
 

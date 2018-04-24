@@ -36,8 +36,9 @@ Options include:
   dereference: false, // dereference any symlinks
   equals: fun, // optional function to determine if two entries are the same, see below
   ignore: null, // optional function to ignore file paths on src or dest
-  dryRun: false // emit all events but don't write/del files,
-  keepExisting: false // whether to delete extra files in the destination that are not present in the source
+  dryRun: false, // emit all events but don't write/del files,
+  keepExisting: false, // whether to delete extra files in the destination that are not present in the source
+  skipSpecial: true // skip any files that are not regular files
 }
 ```
 
