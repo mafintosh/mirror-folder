@@ -9,6 +9,7 @@ module.exports = mirror
 function mirror (src, dst, opts, cb) {
   if (typeof opts === 'function') return mirror(src, dst, null, opts)
   if (!opts) opts = {}
+  if (opts.skipSpecial !== false) opts.skipSpecial = true
 
   var progress = new events.EventEmitter()
   progress.destroy = destroy
@@ -88,6 +89,11 @@ function mirror (src, dst, opts, cb) {
 
         // copy to b
         if (a.stat && !b.stat) return put(a, b, next)
+
+        if (!a.stat.isDirectory() && opts.skipSpecial && !a.stat.isFile()) {
+          progress.emit('skip', a, b)
+          return next()
+        }
 
         // check if they are the same
         equals(a, b, function (err, same) {
