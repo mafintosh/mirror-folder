@@ -75,7 +75,7 @@ function mirror (src, dst, opts, cb) {
           return next()
         }
 
-        if (opts.skipSpecial && !a.isFile()) {
+        if (opts.skipSpecial && !a.stat.isFile()) {
           progress.emit('skip', a, b)
           return next()
         }
