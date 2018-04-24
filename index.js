@@ -75,11 +75,6 @@ function mirror (src, dst, opts, cb) {
           return next()
         }
 
-        if (opts.skipSpecial && !a.stat.isFile()) {
-          progress.emit('skip', a, b)
-          return next()
-        }
-
         // ignore
         if (opts.ignore && (opts.ignore(a.name, a.stat) || opts.ignore(b.name, b.stat))) {
           if (live && b.stat && b.stat.isDirectory() && !a.stat) {
@@ -94,6 +89,11 @@ function mirror (src, dst, opts, cb) {
 
         // copy to b
         if (a.stat && !b.stat) return put(a, b, next)
+
+        if (!a.stat.isDirectory() && opts.skipSpecial && !a.stat.isFile()) {
+          progress.emit('skip', a, b)
+          return next()
+        }
 
         // check if they are the same
         equals(a, b, function (err, same) {
