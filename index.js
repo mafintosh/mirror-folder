@@ -214,6 +214,20 @@ function mirror (src, dst, opts, cb) {
     }
     if (a.stat.isDirectory()) return b.fs.mkdir(b.name, a.stat.mode, ignoreError(cb))
 
+    if (a.stat.isSymbolicLink()) {
+      a.fs.readlink(a.name, function (err, linkname) {
+        if (err) return cb(err)
+        if (linkname[0] === '/') return cb(new Error('Absolute symlinks not supported yet.'))
+        b.fs.lstat(b.name, function (err) {
+          if (err) return b.fs.symlink(linkname, b.name, cb)
+          b.fs.unlink(b.name, function () {
+            b.fs.symlink(linkname, b.name, cb)
+          })
+        })
+      })
+      return
+    }
+
     if (a.live && a.fs.open) {
       // To work around the race condition that files might be written *in progress*
       // when live watching we use the fd retry 50ms option.
