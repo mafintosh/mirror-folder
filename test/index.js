@@ -55,7 +55,66 @@ test('mirror regular fs', function (t) {
   })
 })
 
-test('mirror + destory in progress', function (t) {
+test('mirror regular fs + ignore', function (t) {
+  tmp(function (err, dir, cleanup) {
+    t.ifError(err, 'error')
+
+    var puts = 0
+    var pending = 0
+    var progress = mirror(fixtures, dir, {
+      ignore: function (name, stat, cb) {
+        if (!stat || stat.isDirectory()) return process.nextTick(cb, false)
+        fs.readFile(name, { encoding: 'utf-8' }, function (err, contents) {
+          if (err) return cb(err)
+          return cb(null, contents.search('Mirror') !== -1)
+        })
+      }
+    }, function (err) {
+      t.ifError(err, 'error')
+      done()
+    })
+
+    progress.on('pending', function () {
+      pending++
+    })
+
+    progress.on('ignore', function () {
+      pending--
+    })
+
+    progress.on('skip', function () {
+      pending--
+    })
+
+    progress.on('put', function () {
+      t.ok(progress.pending.length, 'pending items')
+      pending--
+    })
+
+    progress.on('put-end', function (src) {
+      puts++
+    })
+
+    function done () {
+      t.ok(progress.pending.length === 0, 'no items in pending queue')
+      t.same(pending, 0, 'zero items pending')
+      t.same(puts, 1, 'one files added')
+      try {
+        fs.statSync(path.join(dir, 'hello.txt'), 'file copied')
+        t.fail('copied an ignored file')
+      } catch (err) {
+        t.ok(err, 'hello.txt stat errored')
+      }
+      t.ok(fs.statSync(path.join(dir, 'dir', 'file.txt')), 'file copied')
+      cleanup(function (err) {
+        t.ifError(err, 'error')
+        t.end()
+      })
+    }
+  })
+})
+
+test('mirror + destroy in progress', function (t) {
   tmp(function (err, dir, cleanup) {
     t.ifError(err, 'error')
 
@@ -99,7 +158,9 @@ test('mirror regular fs with watch mode', function (t) {
     progress.on('put-end', function (src) {
       puts++
       if (puts === 2) {
-        fs.writeFile(tmpFile, 'hello', 'utf-8')
+        fs.writeFile(tmpFile, 'hello', { encoding: 'utf8' }, function (err) {
+          t.error(err, 'no error')
+        })
       }
       if (src.name.indexOf('tmp.txt') > -1) done()
     })

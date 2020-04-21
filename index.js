@@ -76,34 +76,47 @@ function mirror (src, dst, opts, cb) {
         }
 
         // ignore
-        if (opts.ignore && (opts.ignore(a.name, a.stat) || opts.ignore(b.name, b.stat))) {
-          if (live && b.stat && b.stat.isDirectory() && !a.stat) {
-            return rimraf(b, opts.ignore, next)
-          }
-          progress.emit('ignore', a, b)
-          return next()
+        if (opts.ignore) {
+          opts.ignore(a.name, a.stat, function (err, aIgnored) {
+            if (err) throw err
+            opts.ignore(b.name, b.stat, function (err, bIgnored) {
+              if (err) throw err
+              if (aIgnored || bIgnored) {
+                if (live && b.stat && b.stat.isDirectory() && !a.stat) {
+                  return rimraf(b, opts.ignore, next)
+                }
+                progress.emit('ignore', a, b)
+                return next()
+              }
+              return processFile()
+            })
+          })
+        } else {
+          return processFile()
         }
 
-        // del from b
-        if (!a.stat && b.stat) return del(b, next)
+        function processFile () {
+          // del from b
+          if (!a.stat && b.stat) return del(b, next)
 
-        // copy to b
-        if (a.stat && !b.stat) return put(a, b, next)
+          // copy to b
+          if (a.stat && !b.stat) return put(a, b, next)
 
-        if (!a.stat.isDirectory() && opts.skipSpecial && !a.stat.isFile()) {
-          progress.emit('skip', a, b)
-          return next()
-        }
-
-        // check if they are the same
-        equals(a, b, function (err, same) {
-          if (err) throw err
-          if (same) {
+          if (!a.stat.isDirectory() && opts.skipSpecial && !a.stat.isFile()) {
             progress.emit('skip', a, b)
             return next()
           }
-          put(a, b, next)
-        })
+
+          // check if they are the same
+          equals(a, b, function (err, same) {
+            if (err) throw err
+            if (same) {
+              progress.emit('skip', a, b)
+              return next()
+            }
+            put(a, b, next)
+          })
+        }
       })
     })
   }
@@ -190,10 +203,14 @@ function mirror (src, dst, opts, cb) {
 
       function loop () {
         if (!list.length) {
-          if (ignore && ignore(b.name, b.stat)) return process.nextTick(cb)
-          if (b.stat.isDirectory()) b.fs.rmdir(b.name, cb)
-          else b.fs.unlink(b.name, cb)
-          return
+          if (ignore) {
+            return ignore(b.name, b.stat, function (err, ignored) {
+              if (err) return cb(err)
+              if (ignored) return process.nextTick(cb)
+              return remove()
+            })
+          }
+          return remove()
         }
 
         var name = path.join(b.name, list.shift())
@@ -202,6 +219,11 @@ function mirror (src, dst, opts, cb) {
           if (err) return cb()
           rimraf({name: name, stat: st, fs: b.fs}, ignore, loop)
         })
+
+        function remove () {
+          if (b.stat.isDirectory()) b.fs.rmdir(b.name, cb)
+          else b.fs.unlink(b.name, cb)
+        }
       }
     })
   }
