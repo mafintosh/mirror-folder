@@ -29,7 +29,10 @@ function mirror (src, dst, opts, cb) {
   var equals = opts.equals || defaultEquals
   var stopWatch = null
 
-  if (opts.watch) stopWatch = watch(src.name, onwatch)
+  if (opts.watch) {
+    const watchFunc = (typeof opts.watch === 'function') ? opts.watch : watch
+    stopWatch = watchFunc(src.name, onwatch)
+  }
   walk()
 
   return progress
@@ -39,6 +42,7 @@ function mirror (src, dst, opts, cb) {
   }
 
   function update (name, live) {
+    console.log('IN UPDATE, NAME:', name)
     var item = {name: name.slice(src.name.length) || path.sep, live: live}
     if (name === src.name) item = {name: '', live: live} // allow single file src (not '/')
 
@@ -77,19 +81,16 @@ function mirror (src, dst, opts, cb) {
 
         // ignore
         if (opts.ignore) {
-          opts.ignore(a.name, a.stat, function (err, aIgnored) {
+          opts.ignore(a.name, a.stat, function (err, ignored) {
             if (err) throw err
-            opts.ignore(b.name, b.stat, function (err, bIgnored) {
-              if (err) throw err
-              if (aIgnored || bIgnored) {
-                if (live && b.stat && b.stat.isDirectory() && !a.stat) {
-                  return rimraf(b, opts.ignore, next)
-                }
-                progress.emit('ignore', a, b)
-                return next()
+            if (ignored) {
+              if (live && b.stat && b.stat.isDirectory() && !a.stat) {
+                return rimraf(b, opts.ignore, next)
               }
-              return processFile()
-            })
+              progress.emit('ignore', a, b)
+              return next()
+            }
+            return processFile()
           })
         } else {
           return processFile()
@@ -262,31 +263,48 @@ function mirror (src, dst, opts, cb) {
     }
 
     function copy (rs) {
-      var ws = b.fs.createWriteStream(b.name, {mode: a.stat.mode})
+      ensureParent(b, err => {
+        if (err) return onerror(err)
+        var metadata = { mode: a.stat.mode }
+        console.log('IN COPY, BEFORE PUT?', !!opts.beforePut, 'name:', a.name)
+        if (opts.beforePut) return opts.beforePut(a, b, metadata, onmapped)
+        return onmapped(null, metadata)
+      })
 
-      rs.on('error', onerror)
-      ws.on('error', onerror)
-      ws.on('finish', onfinish)
+      function onmapped (err, metadata) {
+        if (err) return onerror(err)
+        console.log('CREATING WRITE STREAM FOR:', b.name)
+        var ws = b.fs.createWriteStream(b.name, metadata)
 
-      rs.pipe(ws)
-      rs.on('data', ondata)
+        rs.on('error', onerror)
+        ws.on('error', onerror)
+        ws.on('finish', onfinish)
 
-      function ondata (data) {
-        progress.emit('put-data', data, a, b)
+        rs.pipe(ws)
+        rs.on('data', ondata)
+
+        function ondata (data) {
+          progress.emit('put-data', data, a, b)
+        }
+
+        function onerror (err) {
+          progress.emit('put-error', a, b)
+          rs.destroy()
+          ws.destroy()
+          ws.removeListener('finish', cb)
+          cb(err)
+        }
       }
 
-      function onerror (err) {
-        progress.emit('put-error', a, b)
-        rs.destroy()
-        ws.destroy()
-        ws.removeListener('finish', cb)
-        cb(err)
+      function ensureParent (b, cb) {
+        b.fs.mkdir(path.dirname(b.name), { recursive: true }, cb)
       }
     }
 
     function onfinish () {
       progress.emit('put-end', a, b)
-      cb()
+      if (opts.afterPut) opts.afterPut(a, b, cb)
+      else cb()
     }
   }
 
