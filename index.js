@@ -42,7 +42,6 @@ function mirror (src, dst, opts, cb) {
   }
 
   function update (name, live) {
-    console.log('IN UPDATE, NAME:', name)
     var item = {name: name.slice(src.name.length) || path.sep, live: live}
     if (name === src.name) item = {name: '', live: live} // allow single file src (not '/')
 
@@ -81,16 +80,18 @@ function mirror (src, dst, opts, cb) {
 
         // ignore
         if (opts.ignore) {
-          opts.ignore(a.name, a.stat, function (err, ignored) {
+          opts.ignore(a.name, a.stat, function (err, aIgnored) {
             if (err) throw err
-            if (ignored) {
-              if (live && b.stat && b.stat.isDirectory() && !a.stat) {
-                return rimraf(b, opts.ignore, next)
+            opts.ignore(b.name, b.stat, function (err, bIgnored) {
+              if (aIgnored || bIgnored) {
+                if (live && b.stat && b.stat.isDirectory() && !a.stat) {
+                  return rimraf(b, opts.ignore, next)
+                }
+                progress.emit('ignore', a, b)
+                return next()
               }
-              progress.emit('ignore', a, b)
-              return next()
-            }
-            return processFile()
+              return processFile()
+            })
           })
         } else {
           return processFile()
@@ -263,18 +264,12 @@ function mirror (src, dst, opts, cb) {
     }
 
     function copy (rs) {
-      ensureParent(b, err => {
-        if (err) return onerror(err)
-        var metadata = { mode: a.stat.mode }
-        console.log('IN COPY, BEFORE PUT?', !!opts.beforePut, 'name:', a.name)
-        if (opts.beforePut) return opts.beforePut(a, b, metadata, onmapped)
-        return onmapped(null, metadata)
-      })
+      if (opts.ensureParents) ensureParents(b, onparents)
+      else onparents(null)
 
-      function onmapped (err, metadata) {
+      function onparents (err) {
         if (err) return onerror(err)
-        console.log('CREATING WRITE STREAM FOR:', b.name)
-        var ws = b.fs.createWriteStream(b.name, metadata)
+        var ws = b.fs.createWriteStream(b.name, { mode: a.stat.mode })
 
         rs.on('error', onerror)
         ws.on('error', onerror)
@@ -296,15 +291,14 @@ function mirror (src, dst, opts, cb) {
         }
       }
 
-      function ensureParent (b, cb) {
+      function ensureParents (b, cb) {
         b.fs.mkdir(path.dirname(b.name), { recursive: true }, cb)
       }
     }
 
     function onfinish () {
       progress.emit('put-end', a, b)
-      if (opts.afterPut) opts.afterPut(a, b, cb)
-      else cb()
+      return cb()
     }
   }
 
