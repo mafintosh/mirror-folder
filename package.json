@@ -8,7 +8,7 @@
     "recursive-watch": "^1.1.1"
   },
   "devDependencies": {
-    "hyperdrive": "^8.2.0",
+    "hyperdrive": "beta",
     "random-access-memory": "^2.3.0",
     "standard": "^9.0.2",
     "tape": "^4.6.3",

@@ -32,13 +32,14 @@ Options include:
 
 ``` js
 {
-  watch: false, // keep watching the src and mirror new entries,
+  watch: false, // keep watching the src and mirror new entries, can also be a custom watch function
   dereference: false, // dereference any symlinks
   equals: fun, // optional function to determine if two entries are the same, see below
-  ignore: null, // optional function to ignore file paths on src or dest
+  ignore: null, // optional async function to ignore file paths on src or dest
   dryRun: false, // emit all events but don't write/del files,
   keepExisting: false, // whether to delete extra files in the destination that are not present in the source
-  skipSpecial: true // skip any files that are not regular files
+  skipSpecial: true // skip any files that are not regular files,
+  ensureParents: false // ensure that all parent directories exist before creating children.
 }
 ```
 
@@ -59,11 +60,16 @@ Per default the equals function will check if mtime is larger on the src entry o
 The ignore function looks like this:
 
 ``` js
-function ignore (file) {
+function ignore (file, cb) {
   // ignore any files with secret in them
-  if (file.indexOf('secret') > -1) return true
-  return false
+  if (file.indexOf('secret') > -1) return process.nextTick(cb, null, true)
+  return process.nextTick(cb, null, false)
 }
+```
+
+If you want to use a custom watch function on the src fs, the `watch` option should take the form:
+```js
+var unwatch = function watch (path, onwatch) { ... }
 ```
 
 If you are using a custom fs module (like [graceful-fs](https://github.com/isaacs/node-graceful-fs)) you can pass that in

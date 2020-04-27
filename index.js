@@ -29,7 +29,10 @@ function mirror (src, dst, opts, cb) {
   var equals = opts.equals || defaultEquals
   var stopWatch = null
 
-  if (opts.watch) stopWatch = watch(src.name, onwatch)
+  if (opts.watch) {
+    const watchFunc = (typeof opts.watch === 'function') ? opts.watch : watch
+    stopWatch = watchFunc(src.name, onwatch)
+  }
   walk()
 
   return progress
@@ -76,34 +79,47 @@ function mirror (src, dst, opts, cb) {
         }
 
         // ignore
-        if (opts.ignore && (opts.ignore(a.name, a.stat) || opts.ignore(b.name, b.stat))) {
-          if (live && b.stat && b.stat.isDirectory() && !a.stat) {
-            return rimraf(b, opts.ignore, next)
-          }
-          progress.emit('ignore', a, b)
-          return next()
+        if (opts.ignore) {
+          opts.ignore(a.name, a.stat, function (err, aIgnored) {
+            if (err) return progress.emit('error', err)
+            opts.ignore(b.name, b.stat, function (err, bIgnored) {
+              if (err) return progress.emit('error', err)
+              if (aIgnored || bIgnored) {
+                if (live && b.stat && b.stat.isDirectory() && !a.stat) {
+                  return rimraf(b, opts.ignore, next)
+                }
+                progress.emit('ignore', a, b)
+                return next()
+              }
+              return processFile()
+            })
+          })
+        } else {
+          return processFile()
         }
 
-        // del from b
-        if (!a.stat && b.stat) return del(b, next)
+        function processFile () {
+          // del from b
+          if (!a.stat && b.stat) return del(b, next)
 
-        // copy to b
-        if (a.stat && !b.stat) return put(a, b, next)
+          // copy to b
+          if (a.stat && !b.stat) return put(a, b, next)
 
-        if (!a.stat.isDirectory() && opts.skipSpecial && !a.stat.isFile()) {
-          progress.emit('skip', a, b)
-          return next()
-        }
-
-        // check if they are the same
-        equals(a, b, function (err, same) {
-          if (err) throw err
-          if (same) {
+          if (!a.stat.isDirectory() && opts.skipSpecial && !a.stat.isFile()) {
             progress.emit('skip', a, b)
             return next()
           }
-          put(a, b, next)
-        })
+
+          // check if they are the same
+          equals(a, b, function (err, same) {
+            if (err) throw err
+            if (same) {
+              progress.emit('skip', a, b)
+              return next()
+            }
+            put(a, b, next)
+          })
+        }
       })
     })
   }
@@ -190,10 +206,14 @@ function mirror (src, dst, opts, cb) {
 
       function loop () {
         if (!list.length) {
-          if (ignore && ignore(b.name, b.stat)) return process.nextTick(cb)
-          if (b.stat.isDirectory()) b.fs.rmdir(b.name, cb)
-          else b.fs.unlink(b.name, cb)
-          return
+          if (ignore) {
+            return ignore(b.name, b.stat, function (err, ignored) {
+              if (err) return cb(err)
+              if (ignored) return process.nextTick(cb)
+              return remove()
+            })
+          }
+          return remove()
         }
 
         var name = path.join(b.name, list.shift())
@@ -202,6 +222,11 @@ function mirror (src, dst, opts, cb) {
           if (err) return cb()
           rimraf({name: name, stat: st, fs: b.fs}, ignore, loop)
         })
+
+        function remove () {
+          if (b.stat.isDirectory()) b.fs.rmdir(b.name, cb)
+          else b.fs.unlink(b.name, cb)
+        }
       }
     })
   }
@@ -240,31 +265,41 @@ function mirror (src, dst, opts, cb) {
     }
 
     function copy (rs) {
-      var ws = b.fs.createWriteStream(b.name, {mode: a.stat.mode})
+      if (opts.ensureParents) ensureParents(b, onparents)
+      else onparents(null)
 
-      rs.on('error', onerror)
-      ws.on('error', onerror)
-      ws.on('finish', onfinish)
+      function onparents (err) {
+        if (err) return onerror(err)
+        var ws = b.fs.createWriteStream(b.name, { mode: a.stat.mode })
 
-      rs.pipe(ws)
-      rs.on('data', ondata)
+        rs.on('error', onerror)
+        ws.on('error', onerror)
+        ws.on('finish', onfinish)
 
-      function ondata (data) {
-        progress.emit('put-data', data, a, b)
+        rs.pipe(ws)
+        rs.on('data', ondata)
+
+        function ondata (data) {
+          progress.emit('put-data', data, a, b)
+        }
+
+        function onerror (err) {
+          progress.emit('put-error', a, b)
+          rs.destroy()
+          ws.destroy()
+          ws.removeListener('finish', cb)
+          cb(err)
+        }
       }
 
-      function onerror (err) {
-        progress.emit('put-error', a, b)
-        rs.destroy()
-        ws.destroy()
-        ws.removeListener('finish', cb)
-        cb(err)
+      function ensureParents (b, cb) {
+        b.fs.mkdir(path.dirname(b.name), { recursive: true }, cb)
       }
     }
 
     function onfinish () {
       progress.emit('put-end', a, b)
-      cb()
+      return cb()
     }
   }
 
