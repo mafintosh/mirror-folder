@@ -289,3 +289,33 @@ test('keep extra files in dest when opts.keepExisting is true', function (t) {
     }
   })
 })
+
+test('ensureParents option works with custom fs', function (t) {
+  var archive = hyperdrive(ram)
+  archive.writeFile('nested/parents/hello.txt', function (err) {
+    t.ifError(err, 'error')
+    tmp(function (err, dir, cleanup) {
+      t.ifError(err, 'error')
+      var puts = 0
+      var progress = mirror({fs: archive, name: '/'}, dir, {
+        ensureParents: true
+      }, function (err) {
+        t.ifError(err, 'error')
+        done()
+      })
+
+      progress.on('put-end', function (src) {
+        puts++
+      })
+
+      function done () {
+        t.same(puts, 1, 'one file added')
+        fs.stat(path.join(dir, 'nested/parents/hello.txt'), function (err, stat) {
+          t.ifError(err, 'error')
+          t.ok(stat)
+          t.end()
+        })
+      }
+    })
+  })
+})
