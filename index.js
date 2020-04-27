@@ -81,9 +81,9 @@ function mirror (src, dst, opts, cb) {
         // ignore
         if (opts.ignore) {
           opts.ignore(a.name, a.stat, function (err, aIgnored) {
-            if (err) throw err
+            if (err) return progress.emit('error', err)
             opts.ignore(b.name, b.stat, function (err, bIgnored) {
-              if (err) throw err
+              if (err) return progress.emit('error', err)
               if (aIgnored || bIgnored) {
                 if (live && b.stat && b.stat.isDirectory() && !a.stat) {
                   return rimraf(b, opts.ignore, next)
