@@ -60,7 +60,7 @@ Per default the equals function will check if mtime is larger on the src entry o
 The ignore function looks like this:
 
 ``` js
-function ignore (file, cb) {
+function ignore (file, stat, cb) {
   // ignore any files with secret in them
   if (file.indexOf('secret') > -1) return process.nextTick(cb, null, true)
   return process.nextTick(cb, null, false)
