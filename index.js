@@ -142,7 +142,7 @@ function mirror (src, dst, opts, cb) {
     var name = walking.pop()
     waiting = false
 
-    src.fs.lstat(name, function (err, st) {
+    src.fs.stat(name, function (err, st) {
       if (err && err.code === 'ENOENT') return walk()
       if (err) return progress.emit('error', err)
 
@@ -218,7 +218,7 @@ function mirror (src, dst, opts, cb) {
 
         var name = path.join(b.name, list.shift())
 
-        b.fs.lstat(name, function (err, st) {
+        b.fs.stat(name, function (err, st) {
           if (err) return cb()
           rimraf({name: name, stat: st, fs: b.fs}, ignore, loop)
         })
